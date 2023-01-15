@@ -1,6 +1,7 @@
 0. Установите зависимости из requirements.txt (pip install -r requirements.txt) и установите [ffmpeg](https://ffmpeg.org/download.html)
 1. Вставьте токен своего бота в config.py
-2. Запустите main.py
+2. Запустите config.py
+3. Запустите main.py
 
 
 Телеграм бот сохраняет аудиосообщения и фотографии в папки, по идентификаторам пользователей.
