@@ -1,6 +1,10 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters.builtin import CommandStart
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from pathlib import Path
+import numpy as np
+import cv2
+import configparser
 config_obj = configparser.ConfigParser()
 config_obj.read('config.ini')
 bot_param = config_obj['BOT']
@@ -25,5 +29,24 @@ async def buttons(message: types.Message):
 async def callback_btn(callback_query: types.CallbackQuery):
     await bot.answer_callback_query(callback_query.id)
     await bot.send_message(callback_query.from_user.id, 'Я бабака!')
+async def detect_face(img, message, file_id):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 4)
+    if len(faces) > 0:
+        await message.answer('Лицо есть - фото сохранено!')
+        for (x, y, w, h) in faces:
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        Path(f'facial_photos/{message.from_user.id}').mkdir(parents=True, exist_ok=True)   
+        cv2.imwrite(f'facial_photos/{message.from_user.id}/{file_id}.jpg', img)
+    else:
+        await message.answer('Лица нет - фото не сохранено!')
+
+@dp.message_handler(content_types=types.ContentTypes.PHOTO)
+async def process_photo(message: types.Message):
+    photo = await message.photo[-1].get_file()
+    photo_buf = await bot.download_file(photo.file_path)
+    img = cv2.imdecode(np.frombuffer(photo_buf.read(), np.uint8), 1)
+    await detect_face(img, message, photo.file_id)
 if __name__ == '__main__':
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
     executor.start_polling(dp, skip_updates=True)
